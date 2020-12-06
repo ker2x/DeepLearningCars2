@@ -4,12 +4,15 @@ import sdl2.ext
 
 cdef class Simulation:
     """This is here it all begin, it control everything"""
+    # Globals
+
     # private
     cdef long fps, running, quit, generation
     cdef float timer, old_timer
 
     # public & readonly
-    cdef public object window
+    cdef public object window, surface, renderer
+    cdef readonly RESET_TIMER, NUM_CAR, LEARNING_RATE, LEARNING_RATE_DEC, LEARNING_RATE_MIN
 
     def __init__(self):
         # General variables
@@ -19,8 +22,16 @@ cdef class Simulation:
         self.quit = 0
         self.generation = 0
         self.window = None
+        self.surface = None
+        self.renderer = None
 
         # Simulation variable
+        self.RESET_TIMER = 20000  # reset the track after n ms
+        self.NUM_CAR = 100  # how many car to spawn
+        self.LEARNING_RATE = 0.1
+        self.LEARNING_RATE_DEC = 0.001
+        self.LEARNING_RATE_MIN = 0.05
+
 
         # CODE
         # from main -> simulation.__init__ -> setup() -> (loop() until quit == 1) -----------------------------> leave()
@@ -35,9 +46,13 @@ cdef class Simulation:
 
     def setup(self):
         """Only called once"""
-        sdl2.ext.init()
-        self.window = sdl2.ext.Window("Hello World!", size=(640, 480))
-        self.window.show()
+        # SDL initialization
+        sdl2.SDL_Init(sdl2.SDL_INIT_VIDEO | sdl2.SDL_INIT_EVENTS)
+        self.window = sdl2.SDL_CreateWindow(b"Deep Learning Car 2", sdl2.SDL_WINDOWPOS_CENTERED,
+                                            sdl2.SDL_WINDOWPOS_CENTERED, 800, 600, sdl2.SDL_WINDOW_SHOWN)
+        self.surface = sdl2.SDL_GetWindowSurface(self.window)
+        self.renderer = sdl2.SDL_CreateRenderer(self.window, -1, sdl2.SDL_RENDERER_ACCELERATED)
+
         # TODO : Generate first clean batch of car
 
     def loop(self):
@@ -71,13 +86,16 @@ cdef class Simulation:
         #  (set running = 0, the loop will call end() itself)
 
     def render(self):
-        self.window.refresh()
+        sdl2.SDL_SetRenderDrawColor(self.renderer, 0, 100, 0, 255)
+        sdl2.SDL_RenderClear(self.renderer)
+        sdl2.SDL_RenderPresent(self.renderer)
 
     def end(self):
         # TODO make a new batch of car
-        # TODO set runnng to 1
+        # TODO set running to 1
         pass
 
     def leave(self):
         print("Goodbye !")
-        sdl2.ext.quit()
+        sdl2.SDL_DestroyWindow(self.window)
+        sdl2.SDL_Quit()
